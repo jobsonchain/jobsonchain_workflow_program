@@ -1,0 +1,16 @@
+[package]
+name = "jobsonchain_company_info_program"
+version = "0.1.0"
+edition = "2021"
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[features]
+no-entrypoint = []
+
+[dependencies]
+borsh = "0.9"
+solana-program = "1.9.2"
+
+[patch.crates-io]
+getrandom = {git ="https://github.com/rust-random/getrandom.git", tag = "v0.2.5"}
+[lib]
+crate-type = ["cdylib", "lib"]
