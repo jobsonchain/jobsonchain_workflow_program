@@ -495,7 +495,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "jobsonchain_user_info_program"
+name = "jobsonchain_workflow_program"
 version = "0.1.0"
 dependencies = [
  "borsh",

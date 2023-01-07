@@ -6,28 +6,29 @@ use solana_program::{
 
 #[derive(Debug, PartialEq, Clone)]
 #[derive(BorshDeserialize, BorshSerialize)]
-pub struct CompanyInfoState {
+pub struct WorkflowState {
     pub is_initialized: bool, //1
-    pub owner_pubkey: Pubkey, //32
-    pub username: String, //32
-    pub name: String, //64
-    pub image_uri: String, //128
-    pub cover_image_uri: String, //128
-    pub founded_in: String, //8
-    pub empoliyee_size: u64, //8
-    pub address: String, //512
-    pub description: String// 1024
-    pub website: String //128
+    pub archived: bool, //1 true when job is in 'accepted' or 'rejected' or 'withdraw' status
+    pub company_owner_pubkey: Pubkey, //32
+    pub company_pubkey: Pubkey, //32
+    pub user_pubkey: Pubkey, //32
+    pub job_pubkey: Pubkey, //32
+    pub status: String, //16 => 'saved' or 'applied' or 'in_progress' or 'accepted' or 'rejected' or 'withdraw'
+    pub job_applied_at: u64, //8 => timestamp in unix format
+    pub is_paid: bool, //1
+    pub paid_amount: u64,//8
+    pub paid_at: u64, //8 => timestamp in unix format
+    pub last_updated_at: u64, //8 => timestamp in unix format
 }
-impl Sealed for CompanyInfoState {}
-impl IsInitialized for CompanyInfoState {
+impl Sealed for WorkflowState {}
+impl IsInitialized for WorkflowState {
     fn is_initialized(&self) -> bool {
         self.is_initialized
     }
 }
 
-impl CompanyInfoState {
-    pub const LEN: usize = 1+32+32+64+128+128+8+8+512+1024+128; //2065 ~2100
+impl WorkflowState {
+    pub const LEN: usize = 1+1+16+32+32+32+32+8+1+8+8+8; //179 ~200
 }
 
 

@@ -3,58 +3,48 @@ use borsh::BorshDeserialize;
 use solana_program::{msg, program_error::ProgramError};
 
 #[derive(BorshDeserialize, Debug)]
-pub struct SaveCompanyInfoPayload {
-    username: String, //32
-    name: String, //64
-    image_uri: String, //128
-    cover_image_uri: String, //128
-    founded_in: String, //8
-    empoliyee_size: u64, //8
-    address: String, //512
-    description: String// 1024
-    website: String //128
+pub struct AddWorkflowStatePayload {
+    pub status: String, //16 => 'applied' or 'in_progress' or 'accepted' or 'rejected' or 'withdraw'
+    pub job_applied_at: u64, //8 => timestamp in unix format
+    pub last_updated_at: u64, //8 => timestamp in unix format
 }
 
 #[derive(BorshDeserialize, Debug)]
-pub struct UpdateCompanyInfoPayload {
-    username: String, //32
-    name: String, //64
-    image_uri: String, //128
-    cover_image_uri: String, //128
-    founded_in: String, //8
-    empoliyee_size: u64, //8
-    address: String, //512
-    description: String// 1024
-    website: String //128
+pub struct UpdateWorkflowStatePayload {
+    pub archived: bool, //1 true when job is in 'accepted' or 'rejected' or 'withdraw' status
+    pub status: String, //16 => 'applied' or 'in_progress' or 'accepted' or 'rejected' or 'withdraw'
+    pub last_updated_at: u64, //8 => timestamp in unix format
+}
+
+#[derive(BorshDeserialize, Debug)]
+pub struct UpdateWorkflowPaymentStatePayload {
+    pub is_paid: bool, //1
+    pub paid_amount: u64,//8
+    pub paid_at: u64, //8 => timestamp in unix format
+    pub last_updated_at: u64, //8 => timestamp in unix format
 }
 
 #[derive(Clone)]
-pub enum CompanyInfoInstruction {
-    SaveCompanyInfo {
-        username: String, //32
-        name: String, //64
-        image_uri: String, //128
-        cover_image_uri: String, //128
-        founded_in: String, //8
-        empoliyee_size: u64, //8
-        address: String, //512
-        description: String// 1024
-        website: String //128
+pub enum WorkflowStateInstruction {
+    AddWorkflowState {
+        status: String, //16 => 'applied' or 'in_progress' or 'accepted' or 'rejected' or 'withdraw'
+        job_applied_at: u64, //8 => timestamp in unix format
+        last_updated_at: u64, //8 => timestamp in unix format
     },
-    UpdateCompanyInfo {
-        username: String, //32
-        name: String, //64
-        image_uri: String, //128
-        cover_image_uri: String, //128
-        founded_in: String, //8
-        empoliyee_size: u64, //8
-        address: String, //512
-        description: String// 1024
-        website: String //128
+    UpdateWorkflowState {
+        archived: bool, //1 true when job is in 'accepted' or 'rejected' or 'withdraw' status
+        status: String, //16 => 'applied' or 'in_progress' or 'accepted' or 'rejected' or 'withdraw'
+        last_updated_at: u64, //8 => timestamp in unix format
+    },
+    UpdateWorkflowPaymentState {
+        is_paid: bool, //1
+        paid_amount: u64,//8
+        paid_at: u64, //8 => timestamp in unix format
+        last_updated_at: u64, //8 => timestamp in unix format
     },
 }
 
-impl CompanyInfoInstruction {
+impl WorkflowStateInstruction {
     pub fn unpack(input: &[u8]) -> Result<Self, ProgramError> {
         let (tag, rest) = input
             .split_first()
@@ -63,33 +53,29 @@ impl CompanyInfoInstruction {
 
         Ok(match tag {
             0 => {
-                let payload = SaveCompanyInfoPayload::try_from_slice(rest).unwrap();
+                let payload = AddWorkflowStatePayload::try_from_slice(rest).unwrap();
 
-                Self::SaveCompanyInfo {
-                    username: payload.username,
-                    name: payload.name,
-                    image_uri: payload.image_uri,
-                    cover_image_uri: payload.cover_image_uri,
-                    founded_in: payload.founded_in,
-                    empoliyee_size: payload.empoliyee_size,
-                    address: payload.address,
-                    description: payload.description,
-                    website: payload.website,
-                    
+                Self::AddWorkflowState {
+                    status: payload.status,
+                    job_applied_at: payload.job_applied_at,
+                    last_updated_at: payload.last_updated_at,
                 }
             }
             1 => {
-                let payload = UpdateCompanyInfoPayload::try_from_slice(rest).unwrap();
-                Self::UpdateCompanyInfo { 
-                    username: payload.username,
-                    name: payload.name,
-                    image_uri: payload.image_uri,
-                    cover_image_uri: payload.cover_image_uri,
-                    founded_in: payload.founded_in,
-                    empoliyee_size: payload.empoliyee_size,
-                    address: payload.address,
-                    description: payload.description,
-                    website: payload.website,
+                let payload = UpdateWorkflowStatePayload::try_from_slice(rest).unwrap();
+                Self::UpdateWorkflowState  { 
+                    archived: payload.archived,
+                    status: payload.status,
+                    last_updated_at: payload.last_updated_at,
+                }
+            }
+            2 => {
+                let payload = UpdateWorkflowPaymentStatePayload::try_from_slice(rest).unwrap();
+                Self::UpdateWorkflowPaymentState  { 
+                    is_paid: payload.is_paid,
+                    paid_amount: payload.paid_amount,
+                    paid_at: payload.paid_at,
+                    last_updated_at: payload.last_updated_at,
                 }
             }
             _ => return Err(ProgramError::InvalidAccountData),
