@@ -12,6 +12,7 @@ pub struct AddWorkflowStatePayload {
 #[derive(BorshDeserialize, Debug)]
 pub struct UpdateWorkflowStatePayload {
     pub archived: bool, //1 true when job is in 'accepted' or 'rejected' or 'withdraw' status
+    pub is_saved: bool, //1 true when job is in 'saved' status
     pub status: String, //16 => 'applied' or 'in_progress' or 'accepted' or 'rejected' or 'withdraw'
     pub last_updated_at: u64, //8 => timestamp in unix format
 }
@@ -33,6 +34,7 @@ pub enum WorkflowStateInstruction {
     },
     UpdateWorkflowState {
         archived: bool, //1 true when job is in 'accepted' or 'rejected' or 'withdraw' status
+        is_saved: bool, //1 true when job is in 'saved' status
         status: String, //16 => 'applied' or 'in_progress' or 'accepted' or 'rejected' or 'withdraw'
         last_updated_at: u64, //8 => timestamp in unix format
     },
@@ -65,6 +67,7 @@ impl WorkflowStateInstruction {
                 let payload = UpdateWorkflowStatePayload::try_from_slice(rest).unwrap();
                 Self::UpdateWorkflowState  { 
                     archived: payload.archived,
+                    is_saved: payload.is_saved,
                     status: payload.status,
                     last_updated_at: payload.last_updated_at,
                 }

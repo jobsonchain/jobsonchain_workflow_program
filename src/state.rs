@@ -9,6 +9,7 @@ use solana_program::{
 pub struct WorkflowState {
     pub is_initialized: bool, //1
     pub archived: bool, //1 true when job is in 'accepted' or 'rejected' or 'withdraw' status
+    pub is_saved: bool, //1 true when job is in 'saved' status
     pub company_owner_pubkey: Pubkey, //32
     pub company_pubkey: Pubkey, //32
     pub user_pubkey: Pubkey, //32
@@ -28,7 +29,7 @@ impl IsInitialized for WorkflowState {
 }
 
 impl WorkflowState {
-    pub const LEN: usize = 1+1+16+32+32+32+32+8+1+8+8+8; //179 ~200
+    pub const LEN: usize = 1+1+1+16+32+32+32+32+8+1+8+8+8; //179 ~200
 }
 
 

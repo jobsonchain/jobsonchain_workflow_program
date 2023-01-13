@@ -41,12 +41,14 @@ impl Processor {
             }
             WorkflowStateInstruction::UpdateWorkflowState{
                 archived, //1 true when job is in 'accepted' or 'rejected' or 'withdraw' status
+                is_saved, //1 true when user saves the job
                 status, //16 => 'applied' or 'in_progress' or 'accepted' or 'rejected' or 'withdraw'
                 last_updated_at
             } => {
                 msg!("Instruction: Update Workflow State");
                 return Self::update_workflow_state(accounts, program_id, 
                     archived, //1 true when job is in 'accepted' or 'rejected' or 'withdraw' status
+                    is_saved,
                     status, //16 => 'applied' or 'in_progress' or 'accepted' or 'rejected' or 'withdraw'
                     last_updated_at
                 );
@@ -89,7 +91,7 @@ impl Processor {
         let company_info_program_id: &AccountInfo = next_account_info(account_info_iter)?;
         let jobpost_info_program_id: &AccountInfo = next_account_info(account_info_iter)?;
         let system_program_id = next_account_info(account_info_iter)?;
-        
+
         //State: Verify Applicant state account
         let applicant_info_pda_prefix = APPLICANT_STATE_ACCOUNT_PREFIX;
 
@@ -112,31 +114,31 @@ impl Processor {
         try_from_slice_unchecked::<CompanyInfoState>(&company_info_state_account.data.borrow()).unwrap();
 
 
-        let company_info_pda_prefix = COMPANY_STATE_ACCOUNT_PREFIX;
+        // let company_info_pda_prefix = COMPANY_STATE_ACCOUNT_PREFIX;
 
-        let company_info_pda_seed = &[
-            company_info_pda_prefix.as_bytes(),
-            company_info_state_data.company_seq_number.as_bytes(),
-            applicant_info_state_account.key.as_ref()
-        ];
+        // let company_info_pda_seed = &[
+        //     company_info_pda_prefix.as_bytes(),
+        //     company_info_state_data.company_seq_number.as_bytes(),
+        //     applicant_info_state_account.key.as_ref()
+        // ];
 
-        let (company_info_pda, _nonce) =
-            Pubkey::find_program_address(company_info_pda_seed, company_info_program_id.key);
+        // let (company_info_pda, _nonce) =
+        //     Pubkey::find_program_address(company_info_pda_seed, company_info_program_id.key);
 
-        if company_info_pda != *company_info_state_account.key{
-            msg!("Invalid Company Info State Account");
-            return Err(ProgramError::InvalidAccountData);
-        }
+        // if company_info_pda != *company_info_state_account.key{
+        //     msg!("Invalid Company Info State Account");
+        //     return Err(ProgramError::InvalidAccountData);
+        // }
 
         if !company_info_state_data.is_initialized() {
             msg!("Company info state account is not initialized");
             return Err(ProgramError::UninitializedAccount);
         }
 
-        if company_info_state_data.user_info_state_account_pubkey != *applicant_info_state_account.key{
-            msg!("company_info_state_account does not match the user_info_state_account_pubkey of the company_info_state_account");
-            return Err(ProgramError::InvalidAccountData);
-        }
+        // if company_info_state_data.user_info_state_account_pubkey != *applicant_info_state_account.key{
+        //     msg!("company_info_state_account does not match the user_info_state_account_pubkey of the company_info_state_account");
+        //     return Err(ProgramError::InvalidAccountData);
+        // }
 
         //End: Verify Company Info state account
 
@@ -171,6 +173,7 @@ impl Processor {
         let wokrflow_state_pda_seed = &[
             wokrflow_state_pda_prefix.as_bytes(),
             jobpost_info_state_account.key.as_ref(),
+            applicant_info_state_account.key.as_ref(),
         ];
 
         let (wokrflow_state_pda, nonce) =
@@ -218,6 +221,7 @@ impl Processor {
             &[&[
                 wokrflow_state_pda_prefix.as_bytes(),
                 jobpost_info_state_account.key.as_ref(),
+                applicant_info_state_account.key.as_ref(),
                 &[nonce],
                 ]]
         )?;
@@ -278,12 +282,13 @@ impl Processor {
         accounts: &[AccountInfo],
         program_id: &Pubkey,
         archived: bool, //1 true when job is in 'accepted' or 'rejected' or 'withdraw' status
+        is_saved: bool, //1 true when user saves the job
         status: String, //16 => 'applied' or 'in_progress' or 'accepted' or 'rejected' or 'withdraw'
         last_updated_at: u64, //8
     ) -> ProgramResult {
         let account_info_iter = &mut accounts.iter();
 
-        msg!("Updating Company Info");
+        msg!("Updating Workflow Info");
         let owner_account = next_account_info(account_info_iter)?;
         let company_info_state_account = next_account_info(account_info_iter)?;
         let applicant_info_state_account = next_account_info(account_info_iter)?;
@@ -291,7 +296,7 @@ impl Processor {
         let workflow_info_state_account = next_account_info(account_info_iter)?;
 
         let user_info_program_id = next_account_info(account_info_iter)?;
-        let company_info_program_id: &AccountInfo = next_account_info(account_info_iter)?;
+        let _company_info_program_id: &AccountInfo = next_account_info(account_info_iter)?;
         let jobpost_info_program_id: &AccountInfo = next_account_info(account_info_iter)?;
         let _system_program_id = next_account_info(account_info_iter)?;
         
@@ -317,31 +322,31 @@ impl Processor {
         try_from_slice_unchecked::<CompanyInfoState>(&company_info_state_account.data.borrow()).unwrap();
 
 
-        let company_info_pda_prefix = COMPANY_STATE_ACCOUNT_PREFIX;
+        // let company_info_pda_prefix = COMPANY_STATE_ACCOUNT_PREFIX;
 
-        let company_info_pda_seed = &[
-            company_info_pda_prefix.as_bytes(),
-            company_info_state_data.company_seq_number.as_bytes(),
-            applicant_info_state_account.key.as_ref()
-        ];
+        // let company_info_pda_seed = &[
+        //     company_info_pda_prefix.as_bytes(),
+        //     company_info_state_data.company_seq_number.as_bytes(),
+        //     applicant_info_state_account.key.as_ref()
+        // ];
 
-        let (company_info_pda, _nonce) =
-            Pubkey::find_program_address(company_info_pda_seed, company_info_program_id.key);
+        // let (company_info_pda, _nonce) =
+        //     Pubkey::find_program_address(company_info_pda_seed, company_info_program_id.key);
 
-        if company_info_pda != *company_info_state_account.key{
-            msg!("Invalid Company Info State Account");
-            return Err(ProgramError::InvalidAccountData);
-        }
+        // if company_info_pda != *company_info_state_account.key{
+        //     msg!("Invalid Company Info State Account");
+        //     return Err(ProgramError::InvalidAccountData);
+        // }
 
         if !company_info_state_data.is_initialized() {
             msg!("Company info state account is not initialized");
             return Err(ProgramError::UninitializedAccount);
         }
 
-        if company_info_state_data.user_info_state_account_pubkey != *applicant_info_state_account.key{
-            msg!("company_info_state_account does not match the user_info_state_account_pubkey of the company_info_state_account");
-            return Err(ProgramError::InvalidAccountData);
-        }
+        // if company_info_state_data.user_info_state_account_pubkey != *applicant_info_state_account.key{
+        //     msg!("company_info_state_account does not match the user_info_state_account_pubkey of the company_info_state_account");
+        //     return Err(ProgramError::InvalidAccountData);
+        // }
 
         //End: Verify Company Info state account
 
@@ -376,6 +381,7 @@ impl Processor {
         let wokrflow_state_pda_seed = &[
             wokrflow_state_pda_prefix.as_bytes(),
             jobpost_info_state_account.key.as_ref(),
+            applicant_info_state_account.key.as_ref(),
         ];
 
         let (wokrflow_state_pda, _nonce) =
@@ -409,8 +415,15 @@ impl Processor {
         }
 
         workflow_state_data.archived = archived;
+        workflow_state_data.is_saved = is_saved;
         workflow_state_data.status = status;
         workflow_state_data.last_updated_at = last_updated_at;
+
+        msg!("workflow_state_data.archived {}", workflow_state_data.archived);
+        msg!("workflow_state_data.is_saved {}", workflow_state_data.is_saved);
+        msg!("workflow_state_data.status {}", workflow_state_data.status);
+        msg!("workflow_state_data.last_updated_at {}", workflow_state_data.last_updated_at);
+        
 
         workflow_state_data.serialize(&mut &mut workflow_info_state_account.data.borrow_mut()[..])?;
 
@@ -464,31 +477,31 @@ impl Processor {
         try_from_slice_unchecked::<CompanyInfoState>(&company_info_state_account.data.borrow()).unwrap();
 
 
-        let company_info_pda_prefix = COMPANY_STATE_ACCOUNT_PREFIX;
+        // let company_info_pda_prefix = COMPANY_STATE_ACCOUNT_PREFIX;
 
-        let company_info_pda_seed = &[
-            company_info_pda_prefix.as_bytes(),
-            company_info_state_data.company_seq_number.as_bytes(),
-            applicant_info_state_account.key.as_ref()
-        ];
+        // let company_info_pda_seed = &[
+        //     company_info_pda_prefix.as_bytes(),
+        //     company_info_state_data.company_seq_number.as_bytes(),
+        //     applicant_info_state_account.key.as_ref()
+        // ];
 
-        let (company_info_pda, _nonce) =
-            Pubkey::find_program_address(company_info_pda_seed, company_info_program_id.key);
+        // let (company_info_pda, _nonce) =
+        //     Pubkey::find_program_address(company_info_pda_seed, company_info_program_id.key);
 
-        if company_info_pda != *company_info_state_account.key{
-            msg!("Invalid Company Info State Account");
-            return Err(ProgramError::InvalidAccountData);
-        }
+        // if company_info_pda != *company_info_state_account.key{
+        //     msg!("Invalid Company Info State Account");
+        //     return Err(ProgramError::InvalidAccountData);
+        // }
 
         if !company_info_state_data.is_initialized() {
             msg!("Company info state account is not initialized");
             return Err(ProgramError::UninitializedAccount);
         }
 
-        if company_info_state_data.user_info_state_account_pubkey != *applicant_info_state_account.key{
-            msg!("company_info_state_account does not match the user_info_state_account_pubkey of the company_info_state_account");
-            return Err(ProgramError::InvalidAccountData);
-        }
+        // if company_info_state_data.user_info_state_account_pubkey != *applicant_info_state_account.key{
+        //     msg!("company_info_state_account does not match the user_info_state_account_pubkey of the company_info_state_account");
+        //     return Err(ProgramError::InvalidAccountData);
+        // }
 
         //End: Verify Company Info state account
 
@@ -523,6 +536,7 @@ impl Processor {
         let wokrflow_state_pda_seed = &[
             wokrflow_state_pda_prefix.as_bytes(),
             jobpost_info_state_account.key.as_ref(),
+            applicant_info_state_account.key.as_ref(),
         ];
 
         let (wokrflow_state_pda, _nonce) =
