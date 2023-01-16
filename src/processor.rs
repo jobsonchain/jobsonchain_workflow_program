@@ -7,7 +7,7 @@ use solana_program::{
     program_pack::{IsInitialized},
     pubkey::Pubkey,
     system_instruction::create_account,
-    sysvar::{rent::Rent}, borsh::try_from_slice_unchecked,
+    sysvar::{rent::Rent, Sysvar}, borsh::try_from_slice_unchecked, clock::Clock,
 };
 // use mpl_candy_machine::state::CandyMachine;
 use borsh::{BorshSerialize};
@@ -201,40 +201,37 @@ impl Processor {
             return Err(ProgramError::InvalidAccountData);
         }
 
+        
+        if workflow_info_state_account.owner != program_id {
+            msg!("Creating Workflow State Account");
+            invoke_signed(
+                &create_account(
+                    owner_account.key,
+                    workflow_info_state_account.key,
+                    Rent::default().minimum_balance(WorkflowState::LEN),
+                    WorkflowState::LEN as u64,
+                    program_id,
+                ),
+                &[
+                    owner_account.clone(),              //payer of the account - owner
+                    workflow_info_state_account.clone(), //account to be created
+                    company_info_state_account.clone(), //state account key pair of the program id created by owner
+                    system_program_id.clone(), // always prefer to send from outside which is use to create the account
+                ],
+                &[&[
+                    wokrflow_state_pda_prefix.as_bytes(),
+                    jobpost_info_state_account.key.as_ref(),
+                    applicant_info_state_account.key.as_ref(),
+                    &[nonce],
+                    ]]
+            )?;
 
-        msg!("Creating Workflow State Account");
+            msg!("Workflow State Account Created");
+        }
 
-        invoke_signed(
-            &create_account(
-                owner_account.key,
-                workflow_info_state_account.key,
-                Rent::default().minimum_balance(WorkflowState::LEN),
-                WorkflowState::LEN as u64,
-                program_id,
-            ),
-            &[
-                owner_account.clone(),              //payer of the account - owner
-                workflow_info_state_account.clone(), //account to be created
-                company_info_state_account.clone(), //state account key pair of the program id created by owner
-                system_program_id.clone(), // always prefer to send from outside which is use to create the account
-            ],
-            &[&[
-                wokrflow_state_pda_prefix.as_bytes(),
-                jobpost_info_state_account.key.as_ref(),
-                applicant_info_state_account.key.as_ref(),
-                &[nonce],
-                ]]
-        )?;
-
-        msg!("Workflow State Account Created");
-
+        
         let mut workflow_state_data =
         try_from_slice_unchecked::<WorkflowState>(&workflow_info_state_account.data.borrow()).unwrap();
-
-        if workflow_state_data.is_initialized() {
-            msg!("Workflow state account is already initialized");
-            return Err(ProgramError::AccountAlreadyInitialized);
-        }
         
          if workflow_info_state_account.owner != program_id {
             msg!("Workflow info state account is not owned by the program");
@@ -249,7 +246,7 @@ impl Processor {
         workflow_state_data.is_initialized = true;
         workflow_state_data.archived = false;
         workflow_state_data.status = status;
-        workflow_state_data.company_owner_pubkey = owner_account.key.clone();
+        workflow_state_data.company_owner_pubkey = company_info_state_data.user_info_state_account_pubkey.clone();
         workflow_state_data.company_pubkey = *company_info_state_account.key;
         workflow_state_data.user_pubkey = applicant_info_state_account.key.clone();
         workflow_state_data.job_pubkey = jobpost_info_state_account.key.clone();
@@ -260,7 +257,16 @@ impl Processor {
         let mut subscription_purchased_at = 0;
         msg!("Subscription Plan: {}", company_info_state_data.subscription_plan);
         if company_info_state_data.subscription_plan != "paynuse"{
-            subscription_status = true;
+            let mut timestamp = Clock::get()?.unix_timestamp;
+            timestamp = timestamp * 1000;
+            msg!("Timestamp: {}", timestamp);
+            msg!("Subscription Valid till: {}", company_info_state_data.subscription_valid_till);
+            subscription_status = if timestamp < company_info_state_data.subscription_valid_till.try_into().unwrap() {
+                true
+            } else {
+                false
+            };
+            
         }
 
         if subscription_status {
@@ -404,7 +410,8 @@ impl Processor {
             return Err(ProgramError::IncorrectProgramId);
         }
 
-        if workflow_state_data.company_owner_pubkey != *owner_account.key && workflow_state_data.user_pubkey != *applicant_info_state_account.key {
+        //applicant_info_state_account => gets created for the applicant or for the company as well
+        if workflow_state_data.company_owner_pubkey != *applicant_info_state_account.key && workflow_state_data.user_pubkey != *applicant_info_state_account.key {
             msg!("Workflow state account does not belong to the owner");
             return Err(ProgramError::InvalidAccountData);
         }
@@ -451,16 +458,24 @@ impl Processor {
         let workflow_info_state_account = next_account_info(account_info_iter)?;
 
         let user_info_program_id = next_account_info(account_info_iter)?;
-        let company_info_program_id: &AccountInfo = next_account_info(account_info_iter)?;
+        let _company_info_program_id: &AccountInfo = next_account_info(account_info_iter)?;
         let jobpost_info_program_id: &AccountInfo = next_account_info(account_info_iter)?;
         let _system_program_id = next_account_info(account_info_iter)?;
         
         //State: Verify Applicant state account
         let applicant_info_pda_prefix = APPLICANT_STATE_ACCOUNT_PREFIX;
 
+        let applicant_info_state_data = 
+        try_from_slice_unchecked::<ApplicantInfoState>(&applicant_info_state_account.data.borrow()).unwrap();
+
+        if !applicant_info_state_data.is_initialized(){
+            msg!("Applicant Info State Account is not initialized");
+            return Err(ProgramError::UninitializedAccount);
+        }
+
         let applicant_pda_seed = &[
             applicant_info_pda_prefix.as_bytes(),
-            logged_in_user_pubkey.key.as_ref()
+            applicant_info_state_data.owner_pubkey.as_ref()
         ];
         let (applicant_info_pda, _nonce) =
             Pubkey::find_program_address(applicant_pda_seed, user_info_program_id.key);
@@ -559,8 +574,8 @@ impl Processor {
             return Err(ProgramError::IncorrectProgramId);
         }
 
-        if workflow_state_data.company_owner_pubkey != *logged_in_user_pubkey.key {
-            msg!("Workflow state account does not belong to the owner");
+        if workflow_state_data.company_owner_pubkey != company_info_state_data.user_info_state_account_pubkey {
+            msg!("Workflow company owner state account does not match with the company owner");
             return Err(ProgramError::InvalidAccountData);
         }
 
