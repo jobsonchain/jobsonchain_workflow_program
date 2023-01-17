@@ -19,7 +19,7 @@ pub struct WorkflowState {
     pub is_paid: bool, //1
     pub paid_amount: u64,//8
     pub paid_at: u64, //8 => timestamp in unix format
-    pub last_updated_at: u64, //8 => timestamp in unix format
+    pub updated_at: u64, //8 => timestamp in unix format
 }
 impl Sealed for WorkflowState {}
 impl IsInitialized for WorkflowState {

@@ -9,6 +9,8 @@ use solana_program::{
 pub struct ApplicantInfoState {
     pub is_initialized: bool, //1
     pub owner_pubkey: Pubkey, //32
+    pub created_at: u64, //8
+    pub updated_at: u64, //8
     pub username: String, //32
     pub name: String, //32
     pub address: String, //256
@@ -35,6 +37,6 @@ impl IsInitialized for ApplicantInfoState {
 }
 
 impl ApplicantInfoState {
-    pub const LEN: usize = 1+32+32+32+256+128+512+660+64+32+32+16+1+1+1+1+1+1; //1843 ~1850
+    pub const LEN: usize = 1+32+8+8+32+32+256+128+512+660+64+32+32+16+1+1+1+1+1+1; //1819 ~1850
 }
 

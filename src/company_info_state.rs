@@ -10,6 +10,8 @@ pub struct CompanyInfoState {
     pub is_initialized: bool, //1
     pub archived: bool, //1
     pub user_info_state_account_pubkey: Pubkey, //32
+    pub created_at: u64, //8
+    pub updated_at: u64, //8
     pub username: String, //32
     pub name: String, //64
     pub logo_uri: String, //128
@@ -31,8 +33,8 @@ pub struct CompanyInfoState {
     pub facebook: String, //128
     pub instagram: String, //128
     pub subscription_plan: String, //16 "paynuse, sixmonths, yearly, forever" //default is paynuse
-    pub subscription_purchased_on: u64, //8 unix timestamp of the date on which the subscription was purchased
-    pub subscription_valid_till: u64, //8 unix timestamp of the date till which the subscription is valid
+    pub subscription_purchased_on: u64, //4 unix timestamp of the date on which the subscription was purchased
+    pub subscription_valid_till: u64, //4 unix timestamp of the date till which the subscription is valid
     pub company_seq_number: String, //8
 }
 impl Sealed for CompanyInfoState {}
@@ -43,8 +45,5 @@ impl IsInitialized for CompanyInfoState {
 }
 
 impl CompanyInfoState {
-    pub const LEN: usize = 1+1+32+32+64+128+64+8+8+32+32+8+128+128+16+32+512+1024+128+128+128+128+128+16+8+8+8; //2922 ~2950
+    pub const LEN: usize = 1+1+32+8+8+32+64+128+64+8+8+32+32+8+128+128+16+32+512+1024+128+128+128+128+128+16+8+8+8; //2946 ~2950
 }
-
-
-    

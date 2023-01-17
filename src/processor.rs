@@ -15,7 +15,7 @@ use crate::{
     instruction::{WorkflowStateInstruction},
     state::{WorkflowState},
     company_info_state::{CompanyInfoState},
-    applicant_info_state::ApplicantInfoState, contants::{WORKFLOW_STATE_ACCOUNT_PREFIX, APPLICANT_STATE_ACCOUNT_PREFIX, COMPANY_STATE_ACCOUNT_PREFIX, JOBPOST_STATE_ACCOUNT_PREFIX, SUBSCRIPTION_MODIFIER_PUBKEY}, jobpost_info_state::JobPostState
+    applicant_info_state::ApplicantInfoState, contants::{WORKFLOW_STATE_ACCOUNT_PREFIX, APPLICANT_STATE_ACCOUNT_PREFIX, JOBPOST_STATE_ACCOUNT_PREFIX, SUBSCRIPTION_MODIFIER_PUBKEY}, jobpost_info_state::JobPostState
     
 };
 pub struct Processor;
@@ -29,42 +29,32 @@ impl Processor {
         match instruction {
             WorkflowStateInstruction::AddWorkflowState{
                 status, //16 => 'applied' or 'in_progress' or 'accepted' or 'rejected' or 'withdraw'
-                job_applied_at, //8 => timestamp in unix format
-                last_updated_at
             } => {
                 msg!("Instruction: Add Workflow State");
                 return Self::add_workflow_state(accounts, program_id, 
                     status, //16 => 'applied' or 'in_progress' or 'accepted' or 'rejected' or 'withdraw'
-                    job_applied_at, //8 => timestamp in unix format
-                    last_updated_at
                 );
             }
             WorkflowStateInstruction::UpdateWorkflowState{
                 archived, //1 true when job is in 'accepted' or 'rejected' or 'withdraw' status
                 is_saved, //1 true when user saves the job
                 status, //16 => 'applied' or 'in_progress' or 'accepted' or 'rejected' or 'withdraw'
-                last_updated_at
             } => {
                 msg!("Instruction: Update Workflow State");
                 return Self::update_workflow_state(accounts, program_id, 
                     archived, //1 true when job is in 'accepted' or 'rejected' or 'withdraw' status
                     is_saved,
                     status, //16 => 'applied' or 'in_progress' or 'accepted' or 'rejected' or 'withdraw'
-                    last_updated_at
                 );
             }
             WorkflowStateInstruction::UpdateWorkflowPaymentState{
                 is_paid, //1
                 paid_amount,//8
-                paid_at, //8 => timestamp in unix format
-                last_updated_at
             } => {
                 msg!("Instruction: Update Workflow Payment State");
                 return Self::update_workflow_payment_state(accounts, program_id, 
                     is_paid, //1
                     paid_amount,//8
-                    paid_at, //8 => timestamp in unix format
-                    last_updated_at
                 );
             }
         }
@@ -75,8 +65,6 @@ impl Processor {
         accounts: &[AccountInfo],
         program_id: &Pubkey,
         status: String, //16 => 'applied' or 'in_progress' or 'accepted' or 'rejected' or 'withdraw'
-        job_applied_at: u64, //8 => timestamp in unix format
-        last_updated_at: u64
     ) -> ProgramResult {
         let account_info_iter = &mut accounts.iter();
 
@@ -88,7 +76,7 @@ impl Processor {
         let workflow_info_state_account = next_account_info(account_info_iter)?;
 
         let user_info_program_id = next_account_info(account_info_iter)?;
-        let company_info_program_id: &AccountInfo = next_account_info(account_info_iter)?;
+        let _company_info_program_id: &AccountInfo = next_account_info(account_info_iter)?;
         let jobpost_info_program_id: &AccountInfo = next_account_info(account_info_iter)?;
         let system_program_id = next_account_info(account_info_iter)?;
 
@@ -250,7 +238,7 @@ impl Processor {
         workflow_state_data.company_pubkey = *company_info_state_account.key;
         workflow_state_data.user_pubkey = applicant_info_state_account.key.clone();
         workflow_state_data.job_pubkey = jobpost_info_state_account.key.clone();
-        workflow_state_data.job_applied_at = job_applied_at;
+        workflow_state_data.job_applied_at = Clock::get()?.unix_timestamp as u64 * 1000;
 
         //check for subscription plan from the company info state account
         let mut subscription_status = false;
@@ -276,7 +264,7 @@ impl Processor {
         workflow_state_data.is_paid = subscription_status;
         workflow_state_data.paid_amount = 0;
         workflow_state_data.paid_at = subscription_purchased_at;
-        workflow_state_data.last_updated_at = last_updated_at;
+        workflow_state_data.updated_at = Clock::get()?.unix_timestamp as u64 * 1000;
         workflow_state_data.serialize(&mut &mut workflow_info_state_account.data.borrow_mut()[..])?;
 
         msg!("Workflow State Account data added");
@@ -290,7 +278,6 @@ impl Processor {
         archived: bool, //1 true when job is in 'accepted' or 'rejected' or 'withdraw' status
         is_saved: bool, //1 true when user saves the job
         status: String, //16 => 'applied' or 'in_progress' or 'accepted' or 'rejected' or 'withdraw'
-        last_updated_at: u64, //8
     ) -> ProgramResult {
         let account_info_iter = &mut accounts.iter();
 
@@ -424,13 +411,7 @@ impl Processor {
         workflow_state_data.archived = archived;
         workflow_state_data.is_saved = is_saved;
         workflow_state_data.status = status;
-        workflow_state_data.last_updated_at = last_updated_at;
-
-        msg!("workflow_state_data.archived {}", workflow_state_data.archived);
-        msg!("workflow_state_data.is_saved {}", workflow_state_data.is_saved);
-        msg!("workflow_state_data.status {}", workflow_state_data.status);
-        msg!("workflow_state_data.last_updated_at {}", workflow_state_data.last_updated_at);
-        
+        workflow_state_data.updated_at = Clock::get()?.unix_timestamp as u64 * 1000;        
 
         workflow_state_data.serialize(&mut &mut workflow_info_state_account.data.borrow_mut()[..])?;
 
@@ -443,15 +424,13 @@ impl Processor {
         accounts: &[AccountInfo],
         program_id: &Pubkey,
         is_paid: bool,
-        paid_amount: u64,
-        paid_at: u64,
-        last_updated_at: u64,
+        paid_amount: u64
     ) -> ProgramResult{
         let account_info_iter = &mut accounts.iter();
 
         msg!("Updating Workflow Payment Info");
         let owner_account = next_account_info(account_info_iter)?;
-        let logged_in_user_pubkey = next_account_info(account_info_iter)?;
+        let _logged_in_user_pubkey = next_account_info(account_info_iter)?;
         let company_info_state_account = next_account_info(account_info_iter)?;
         let applicant_info_state_account = next_account_info(account_info_iter)?;
         let jobpost_info_state_account = next_account_info(account_info_iter)?;
@@ -591,8 +570,8 @@ impl Processor {
 
         workflow_state_data.is_paid = is_paid;
         workflow_state_data.paid_amount = paid_amount;
-        workflow_state_data.paid_at = paid_at;
-        workflow_state_data.last_updated_at = last_updated_at;        
+        workflow_state_data.paid_at = Clock::get()?.unix_timestamp as u64 * 1000;
+        workflow_state_data.updated_at = Clock::get()?.unix_timestamp as u64 * 1000;       
 
         workflow_state_data.serialize(&mut &mut workflow_info_state_account.data.borrow_mut()[..])?;
 
