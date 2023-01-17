@@ -11,6 +11,7 @@ pub struct JobPostState {
     pub archived: bool, //1
     pub owner_pubkey: Pubkey, //32
     pub company_pubkey: Pubkey, //32
+    pub job_created_at: u64, //8
     pub job_title: String, //128
     pub short_description: String,//256
     pub long_description: String,//1024
@@ -36,8 +37,5 @@ impl IsInitialized for JobPostState {
 }
 
 impl JobPostState {
-    pub const LEN: usize = 1+1+32+32+128+256+1024+148+16+8+8+8+8+8+660+512+32+64+64+8; //3018 ~3050
+    pub const LEN: usize = 1+1+32+32+8+128+256+1024+148+16+8+8+8+8+8+660+512+32+64+64+8; //3018 ~3050
 }
-
-
-    
