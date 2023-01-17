@@ -15,7 +15,7 @@ pub struct JobPostState {
     pub updated_at: u64, //8
     pub job_title: String, //128
     pub short_description: String,//256
-    pub long_description: String,//1024
+    pub long_description: String,//2048
     pub category: Vec<String>,//32*4+10+10 //category is an array of job category like Frontend Developer
     pub job_type: String, //16 full-time, part-time, contract, internship",
     pub currency_type: String, //8 fiat, crypto
@@ -38,5 +38,5 @@ impl IsInitialized for JobPostState {
 }
 
 impl JobPostState {
-    pub const LEN: usize = 1+1+32+32+8+8+128+256+1024+148+16+8+8+8+8+8+660+512+32+64+64+8; //3018 ~3050
+    pub const LEN: usize = 1+1+32+32+8+8+128+256+2048+148+16+8+8+8+8+8+660+512+32+64+64+8; //4058 ~4100
 }
