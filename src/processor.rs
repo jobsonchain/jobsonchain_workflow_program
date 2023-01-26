@@ -294,19 +294,19 @@ impl Processor {
         let _system_program_id = next_account_info(account_info_iter)?;
         
         //State: Verify Applicant state account
-        let applicant_info_pda_prefix = APPLICANT_STATE_ACCOUNT_PREFIX;
+        // let applicant_info_pda_prefix = APPLICANT_STATE_ACCOUNT_PREFIX;
 
-        let applicant_pda_seed = &[
-            applicant_info_pda_prefix.as_bytes(),
-            owner_account.key.as_ref()
-        ];
-        let (applicant_info_pda, _nonce) =
-            Pubkey::find_program_address(applicant_pda_seed, user_info_program_id.key);
+        // let applicant_pda_seed = &[
+        //     applicant_info_pda_prefix.as_bytes(),
+        //     owner_account.key.as_ref()
+        // ];
+        // let (applicant_info_pda, _nonce) =
+        //     Pubkey::find_program_address(applicant_pda_seed, user_info_program_id.key);
 
-        if applicant_info_pda != *applicant_info_state_account.key{
-            msg!("Invalid Applicant Info State Account");
-            return Err(ProgramError::InvalidAccountData);
-        }
+        // if applicant_info_pda != *applicant_info_state_account.key{
+        //     msg!("Invalid Applicant Info State Account");
+        //     return Err(ProgramError::InvalidAccountData);
+        // }
 
         //End: Verify Applicant state account
 
